@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ lst.name }}{% endblock %}
+{% block content %}
+<h1>{{ lst.name }}</h1>
+<p class="lead">{{ lst.description or "" }}</p>
+<p><a href="{{ url_for('main.manage_lists') }}">← All lists</a> · <a href="{{ url_for('main.index') }}">Scan more</a></p>
+
+<div class="stats-grid">
+<div class="stat-card"><span>Subtotal</span><strong>{{ "%.2f"|format(totals.subtotal) }}</strong></div>
+<div class="stat-card"><span>VAT</span><strong>{{ "%.2f"|format(totals.vat) }}</strong></div>
+<div class="stat-card"><span>Total</span><strong>{{ "%.2f"|format(totals.total) }}</strong></div>
+</div>
+
+{% if receipts %}
+<table>
+<thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Subtotal</th><th>VAT</th><th>Total</th></tr></thead>
+<tbody>
+{% for r in receipts %}
+<tr>
+<td>{{ r.date or "—" }}</td>
+<td>{{ r.merchant or "—" }}</td>
+<td><span class="category cat-{{ r.category or 'other' }}">{{ r.category or "other" }}</span></td>
+<td>{{ "%.2f"|format(r.subtotal) if r.subtotal else "—" }}</td>
+<td>{{ "%.2f"|format(r.vat_amount) if r.vat_amount else "—" }}</td>
+<td><strong>{{ "%.2f"|format(r.total) if r.total else "—" }}</strong></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="empty">No receipts in this list yet.</p>
+{% endif %}
+{% endblock %}

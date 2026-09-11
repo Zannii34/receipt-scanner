@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Scan Receipt{% endblock %}
+{% block content %}
+<h1>Scan a Receipt</h1>
+
+{% if active_list %}
+<div class="notice">
+Adding to: <strong>{{ active_list.name }}</strong>
+· <a href="{{ url_for('main.manage_lists') }}">Change list</a>
+</div>
+{% else %}
+<div class="notice notice-warn">
+No active list. <a href="{{ url_for('main.manage_lists') }}">Create one first →</a>
+</div>
+{% endif %}
+
+<div class="mode-tabs">
+<button class="mode-tab active" data-mode="camera" type="button">📷 Camera</button>
+<button class="mode-tab" data-mode="upload" type="button">📁 Upload File</button>
+</div>
+
+<section id="cameraMode" class="mode-panel">
+<div class="camera-frame">
+<video id="video" autoplay playsinline muted></video>
+<div class="camera-overlay"></div>
+</div>
+<div class="camera-actions">
+<button type="button" id="startCamBtn" class="primary">Start Camera</button>
+<button type="button" id="switchCamBtn" class="secondary hidden">Switch Camera</button>
+<button type="button" id="captureBtn" class="primary hidden">📸 Capture</button>
+<button type="button" id="stopCamBtn" class="secondary hidden">Stop</button>
+</div>
+<p class="hint">Point at the receipt. Fill the frame. Tap Capture.</p>
+</section>
+
+<section id="uploadMode" class="mode-panel hidden">
+<div class="upload-zone" id="uploadZone">
+<input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+<div class="upload-prompt">
+<span class="upload-icon">📁</span>
+<strong>Drop a receipt image</strong>
+<span>or <button type="button" id="browseBtn">browse</button></span>
+</div>
+</div>
+</section>
+
+<div id="status" class="status hidden"></div>
+
+<section id="reviewSection" class="review hidden">
+<h2>Review & Save</h2>
+<div class="review-grid">
+<div class="preview">
+<img id="previewImg" src="" alt="Receipt preview">
+<div class="preview-actions">
+<button type="button" id="retakeBtn" class="secondary">📷 Retake</button>
+</div>
+</div>
+<form id="reviewForm" class="review-form">
+<input type="hidden" id="filename">
+<input type="hidden" id="rawText">
+
+<label>List
+<select id="listSelect">
+{% for l in lists %}
+<option value="{{ l.id }}" {% if active_list and l.id == active_list.id %}selected{% endif %}>{{ l.name }}</option>
+{% endfor %}
+</select>
+</label>
+
+<label>Merchant<input type="text" id="merchant" placeholder="Auto-detected"></label>
+<label>Date<input type="date" id="date"></label>
+
+<label>Category
+<select id="category">
+<option value="food">Food</option>
+<option value="transport">Transport</option>
+<option value="office">Office</option>
+<option value="utilities">Utilities</option>
+<option value="entertainment">Entertainment</option>
+<option value="health">Health</option>
+<option value="shopping">Shopping</option>
+<option value="other">Other</option>
+</select>
+</label>
+
+<fieldset class="vat-group">
+<legend>VAT</legend>
+<label class="checkbox"><input type="checkbox" id="vatIncluded"> VAT shown on receipt</label>
+<label>Subtotal (excl. VAT)<input type="number" id="subtotal" step="0.01" placeholder="0.00"></label>
+<label>VAT amount<input type="number" id="vatAmount" step="0.01" placeholder="0.00"></label>
+<label>Total<input type="number" id="total" step="0.01" placeholder="0.00"></label>
+<label>VAT rate
+<select id="vatRate">
+<option value="0.15">15% (South Africa)</option>
+<option value="0.20">20% (UK)</option>
+<option value="0.10">10%</option>
+<option value="0">No VAT</option>
+</select>
+</label>
+</fieldset>
+
+<label>Notes<textarea id="notes" rows="2"></textarea></label>
+
+<div class="review-actions">
+<button type="submit" class="primary">Save to List</button>
+<button type="button" id="cancelBtn" class="secondary">Cancel</button>
+</div>
+</form>
+</div>
+</section>
+
+<section class="recent">
+<h2>Recent Receipts</h2>
+{% if receipts %}
+<table>
+<thead><tr><th>Merchant</th><th>Date</th><th>Subtotal</th><th>VAT</th><th>Total</th><th>Category</th><th></th></tr></thead>
+<tbody>
+{% for r in receipts %}
+<tr>
+<td>{{ r.merchant or "—" }}</td>
+<td>{{ r.date or "—" }}</td>
+<td>{{ "%.2f"|format(r.subtotal) if r.subtotal else "—" }}</td>
+<td>{{ "%.2f"|format(r.vat_amount) if r.vat_amount else "—" }}</td>
+<td><strong>{{ "%.2f"|format(r.total) if r.total else "—" }}</strong></td>
+<td><span class="category cat-{{ r.category or 'other' }}">{{ r.category or "other" }}</span></td>
+<td><button class="link-danger" data-delete="{{ r.id }}">Delete</button></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="empty">No receipts yet.</p>
+{% endif %}
+</section>
+
+<script src="{{ url_for('static', filename='js/camera.js') }}"></script>
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

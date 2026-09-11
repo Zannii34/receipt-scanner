@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Expense Lists{% endblock %}
+{% block content %}
+<h1>Expense Lists</h1>
+<p class="lead">Group receipts by project, client, or month.</p>
+
+<section class="card">
+<h2>Create a New List</h2>
+<form method="POST" class="form-inline">
+<input type="text" name="name" placeholder="e.g., September 2026" required>
+<input type="text" name="description" placeholder="Optional description">
+<button type="submit" class="primary">Create</button>
+</form>
+</section>
+
+{% if lists %}
+<h2>Your Lists</h2>
+<table>
+<thead><tr><th>Name</th><th>Description</th><th>Receipts</th><th>Total</th><th>VAT</th><th>Status</th><th></th></tr></thead>
+<tbody>
+{% for l in lists %}
+<tr>
+<td><a href="/lists/{{ l.id }}">{{ l.name }}</a></td>
+<td>{{ l.description or "—" }}</td>
+<td>{{ l.receipts|length }}</td>
+<td>{{ "%.2f"|format(l.receipts|sum(attribute='total') if l.receipts else 0) }}</td>
+<td>{{ "%.2f"|format(l.receipts|sum(attribute='vat_amount') if l.receipts else 0) }}</td>
+<td>{% if l.is_active %}<span class="badge">Active</span>{% else %}<button class="link" data-activate="{{ l.id }}">Set Active</button>{% endif %}</td>
+<td><button class="link-danger" data-delete-list="{{ l.id }}">Delete</button></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="empty">No lists yet. Create one above.</p>
+{% endif %}
+
+<script>
+document.querySelectorAll("[data-activate]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    await fetch(`/lists/${btn.dataset.activate}/activate`, { method: "POST" });
+    window.location.reload();
+  });
+});
+document.querySelectorAll("[data-delete-list]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    if (!confirm("Delete this list and all its receipts?")) return;
+    await fetch(`/lists/${btn.dataset.deleteList}`, { method: "DELETE" });
+    window.location.reload();
+  });
+});
+</script>
+{% endblock %}

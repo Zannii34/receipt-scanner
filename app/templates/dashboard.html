@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+<h1>Spending Dashboard</h1>
+
+<div class="stats-grid">
+<div class="stat-card"><span>Total</span><strong>{{ "%.2f"|format(total) }}</strong></div>
+<div class="stat-card"><span>Total VAT</span><strong>{{ "%.2f"|format(total_vat) }}</strong></div>
+<div class="stat-card"><span>Receipts</span><strong>{{ count }}</strong></div>
+</div>
+
+{% if lists %}
+<h2>Expense Lists</h2>
+<table>
+<thead><tr><th>Name</th><th>Receipts</th><th>Total</th><th>VAT</th><th></th></tr></thead>
+<tbody>
+{% for l in lists %}
+<tr>
+<td><a href="/lists/{{ l.id }}">{{ l.name }}</a></td>
+<td>{{ l.count }}</td>
+<td>{{ "%.2f"|format(l.total) }}</td>
+<td>{{ "%.2f"|format(l.vat) }}</td>
+<td>{% if l.is_active %}<span class="badge">Active</span>{% endif %}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+{% if categories %}
+<div class="charts-section">
+<div class="chart-card">
+<h2>By Category</h2>
+<canvas id="catChart"></canvas>
+</div>
+<div class="chart-card">
+<h2>By Month</h2>
+<canvas id="monthChart"></canvas>
+</div>
+</div>
+
+<script>
+new Chart(document.getElementById("catChart"), {
+  type: "doughnut",
+  data: {
+    labels: {{ categories.keys()|list|tojson }},
+    datasets: [{
+      data: {{ categories.values()|map(attribute='total')|list|tojson }},
+      backgroundColor: ["#1677ff","#22c55e","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899"]
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }
+});
+
+new Chart(document.getElementById("monthChart"), {
+  type: "bar",
+  data: {
+    labels: {{ months.keys()|list|tojson }},
+    datasets: [{
+      label: "Spent",
+      data: {{ months.values()|list|tojson }},
+      backgroundColor: "#1677ff"
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+</script>
+{% else %}
+<p class="empty">No data yet. Scan some receipts first.</p>
+{% endif %}
+{% endblock %}
