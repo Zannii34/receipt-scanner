@@ -1,7 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Scan Receipt{% endblock %}
 {% block content %}
+<div class="top-stats-bar">
+  <div class="ts-item"><strong>{{ receipts|length }}</strong><span>Receipts</span></div>
+  <div class="ts-item"><strong>R{{ "%.2f"|format(receipts|sum(attribute='total') if receipts else 0) }}</strong><span>Total</span></div>
+  <div class="ts-item"><strong>R{{ "%.2f"|format(receipts|sum(attribute='vat_amount') if receipts else 0) }}</strong><span>VAT</span></div>
+</div>
 <h1>Scan a Receipt</h1>
+{% if not lists %}
+<div class="onboarding-banner">
+  <div class="ob-icon"></div>
+  <div class="ob-content">
+    <h3>Welcome to Receipt Scanner</h3>
+    <p>Get started in 3 steps:</p>
+    <ol>
+      <li>Create an expense list (e.g., "September 2026")</li>
+      <li>Scan or upload your first receipt</li>
+      <li>Review the auto-extracted data and save</li>
+    </ol>
+    <a href="{{ url_for('main.manage_lists') }}" class="primary">Create Your First List </a>
+  </div>
+</div>
+{% endif %}
 
 {% if active_list %}
 <div class="notice">
