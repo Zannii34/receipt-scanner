@@ -396,3 +396,35 @@ th {
   .vat-group { grid-template-columns: 1fr; }
   .camera-actions button { flex: 1; }
 }
+
+/* WK Branding */
+.site-footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+.wk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, #0d64d8, #1890ff);
+  color: #fff;
+  border-radius: 8px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+.site-footer a {
+  color: var(--blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+.site-footer a:hover {
+  text-decoration: underline;
+}
