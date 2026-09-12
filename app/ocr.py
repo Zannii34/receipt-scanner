@@ -1,9 +1,20 @@
 """OCR + parsing logic for receipts."""
+import os
 import re
 from datetime import datetime
 from pathlib import Path
 import pytesseract
 from PIL import Image
+
+# Tesseract binary location — configurable via env var for Render
+TESSERACT_CMD = os.environ.get("TESSERACT_CMD")
+if TESSERACT_CMD:
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+elif os.name == "nt":
+    # Windows default
+    default_win = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    if Path(default_win).exists():
+        pytesseract.pytesseract.tesseract_cmd = default_win
 
 
 def extract_text(image_path):
@@ -17,21 +28,18 @@ def _parse_money(s):
     if not s:
         return None
     s = s.strip().replace("R", "").replace("$", "").strip()
-    # 1234.56 or 1,234.56
     m = re.search(r"(\d{1,3}(?:[,]\d{3})*\.\d{2})", s)
     if m:
         try:
             return float(m.group(1).replace(",", ""))
         except ValueError:
             pass
-    # 1234,56
     m = re.search(r"(\d{1,3}(?:[.]\d{3})*,\d{2})", s)
     if m:
         try:
             return float(m.group(1).replace(".", "").replace(",", "."))
         except ValueError:
             pass
-    # Just a number
     m = re.search(r"(\d+[\.,]\d{2})", s)
     if m:
         try:
@@ -42,7 +50,6 @@ def _parse_money(s):
 
 
 def parse_total(text):
-    """Find the final total on the receipt."""
     patterns = [
         r"(?:total\s*(?:due|amount|incl|payable)?|amount\s*due|balance\s*due)[:\s]*([\d,\.]+)",
         r"(?:^|\n)\s*total[^\n]*?([\d,\.]+)\s*(?:$|\n)",
@@ -58,10 +65,7 @@ def parse_total(text):
 
 
 def parse_vat(text):
-    """Find the VAT/tax amount on the receipt."""
-    patterns = [
-        r"(?:VAT|V\.A\.T\.|Tax|GST)[^\n]*?([\d,\.]+)",
-    ]
+    patterns = [r"(?:VAT|V\.A\.T\.|Tax|GST)[^\n]*?([\d,\.]+)"]
     for pat in patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
@@ -72,10 +76,7 @@ def parse_vat(text):
 
 
 def parse_subtotal(text):
-    """Find the subtotal (before VAT)."""
-    patterns = [
-        r"(?:sub\s*-?\s*total|excl\.?\s*VAT|before\s*VAT)[^\n]*?([\d,\.]+)",
-    ]
+    patterns = [r"(?:sub\s*-?\s*total|excl\.?\s*VAT|before\s*VAT)[^\n]*?([\d,\.]+)"]
     for pat in patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
@@ -86,7 +87,6 @@ def parse_subtotal(text):
 
 
 def parse_vat_rate(text):
-    """Try to find the VAT rate (15%, 20%, etc.)."""
     m = re.search(r"(\d{1,2})\s*%\s*(?:VAT|V\.A\.T\.|Tax)", text, re.IGNORECASE)
     if m:
         try:
@@ -99,11 +99,10 @@ def parse_vat_rate(text):
             return int(m.group(1)) / 100.0
         except ValueError:
             pass
-    return 0.15  # default South African VAT
+    return 0.15
 
 
 def parse_date(text):
-    """Find a date in the text (multiple formats)."""
     patterns = [
         r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})",
         r"(\d{1,2})[-/](\d{1,2})[-/](\d{4})",
@@ -122,7 +121,6 @@ def parse_date(text):
 
 
 def parse_merchant(text):
-    """Guess the merchant from the first non-empty line."""
     for line in text.splitlines():
         line = line.strip()
         if len(line) > 2 and not re.match(r"^[\d\W]+$", line):
@@ -137,12 +135,11 @@ CATEGORY_KEYWORDS = {
     "utilities": ["electric", "water", "municipal", "internet", "airtime", "vodacom", "mtn", "telkom", "cell c"],
     "entertainment": ["cinema", "movie", "netflix", "spotify", "game", "steam", "ster kinekor"],
     "health": ["pharmacy", "clinic", "hospital", "doctor", "dischem", "medic", "clicks"],
-    "shopping": ["shop", "store", "mall", "clothing", "retail", "game", "makro", "takealot"],
+    "shopping": ["shop", "store", "mall", "clothing", "retail", "makro", "takealot"],
 }
 
 
 def categorize(merchant, text):
-    """Categorize a receipt based on merchant + text keywords."""
     combined = ((merchant or "") + " " + (text or "")).lower()
     for category, keywords in CATEGORY_KEYWORDS.items():
         for kw in keywords:
@@ -152,20 +149,16 @@ def categorize(merchant, text):
 
 
 def process_receipt(image_path):
-    """Full pipeline: OCR + parse + categorize."""
     text = extract_text(image_path)
     total = parse_total(text)
     vat = parse_vat(text)
     subtotal = parse_subtotal(text)
     vat_rate = parse_vat_rate(text)
 
-    # If we have total + vat but no subtotal: subtotal = total - vat
     if total and vat and not subtotal:
         subtotal = round(total - vat, 2)
-    # If we have subtotal + vat but no total: total = subtotal + vat
     if subtotal and vat and not total:
         total = round(subtotal + vat, 2)
-    # If we have total + vat_rate but no vat: compute VAT
     if total and not vat and vat_rate:
         vat = round(total * vat_rate / (1 + vat_rate), 2)
         subtotal = round(total - vat, 2)
