@@ -8,3 +8,6 @@ uploads/*
 .env
 .pytest_cache/
 *.egg-info/
+
+*.bak
+*.bak-*
