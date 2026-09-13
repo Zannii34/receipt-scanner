@@ -1,5 +1,8 @@
 # Receipt Scanner
 
+![Python](https://img.shields.io/badge/python-3.11-blue) ![Flask](https://img.shields.io/badge/flask-3.0-black) ![OCR](https://img.shields.io/badge/tesseract-OCR-blue)
+
+
 Scan receipts with OCR + camera, extract merchant, VAT, and total, and build expense lists for tax.
 
 ## Features
